@@ -5,7 +5,9 @@ from werkzeug.security import check_password_hash,generate_password_hash
 from flask_pymongo import PyMongo
 import os
 
-app = Flask('images')
+app = Flask(__name__)
+app.config['MONGO_URI']="mongodb://localhost:27017/photothief"
+
 mongo = PyMongo(app)
 
 app.config['UPLOAD_FOLDER'] = 'uploads/'
@@ -190,4 +192,4 @@ def add():
 
 if __name__ == '__main__':
 	app.secret_key = os.urandom(12)
-	app.run()       # host='0.0.0.0'
+	app.run(debug=True,host=0.0.0.0,port=5678)       # host='0.0.0.0'
