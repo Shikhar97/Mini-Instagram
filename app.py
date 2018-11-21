@@ -1,10 +1,14 @@
-from flask import url_for, send_from_directory,Flask, flash, redirect, render_template, request, session, abort
+import flask
+import pymongo
+from flask import jsonify,url_for, send_from_directory,Flask, flash, redirect, render_template, request, session, abort
 from pymongo import MongoClient
 from flask_cors import CORS
 from werkzeug import secure_filename
 from werkzeug.security import check_password_hash,generate_password_hash
 from flask_pymongo import PyMongo
 import os
+
+import suggestions
 
 app = Flask(__name__)
 CORS(app)
@@ -23,6 +27,14 @@ def validate_login(password_hash, password):
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
+
+def find_friends():
+    collection = mongo.db.data
+    cursor = collection.find({})
+    data={}
+    for document in cursor:
+          data[document["_id"]]=document["friend"]
+    return data
 
 @app.route('/')
 def home():
@@ -108,52 +120,53 @@ def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'],
                                filename)
 
-@app.route('/signup', methods=['POST'])
+@app.route('/signup', methods=['GET','POST'])
 def main():
-    arr=[]
-    frnd=[]
-    to=[]
-    frm=[]
-    user = request.form['username']
-    password = request.form['password']
-    pass_hash = generate_password_hash(password, method='pbkdf2:sha256')
+    if flask.request.method == "POST":
+        arr=[]
+        frnd=[]
+        to=[]
+        frm=[]
+        user = request.form['username']
+        password = request.form['password']
+        pass_hash = generate_password_hash(password, method='pbkdf2:sha256')
 
-    # Insert the user in the DB
-    try:
-        mongo.db.data.insert({"_id": user, "password": pass_hash,"photo":arr,"friend":frnd,"from":frm,"to":to})
-        print ("User created.")
-        session['logged_in']=True
-        session['user']=user
-        session['pass']=password
-    except DuplicateKeyError:
-        print ("User already present in DB.")
-        session['logged_in']=True
-        session['user']=user
-        session['pass']=password
+        # Insert the user in the DB
+        try:
+            mongo.db.data.insert({"_id": user, "password": pass_hash,"photo":arr,"friend":frnd,"from":frm,"to":to})
+            print ("User created.")
+            session['logged_in']=True
+            session['user']=user
+            session['pass']=password
+        except pymongo.errors.DuplicateKeyError:
+            print("User already present in DB.")
+        return redirect(url_for('home'))
+    else:
         return render_template('login.html')
-    return home()
 
 
-
-@app.route('/login', methods=['POST'])
+@app.route('/login', methods=['GET','POST'])
 def do_admin_login():
-	user = mongo.db.data.find_one_or_404({"_id":request.form['username']})
-	session['logged_in']=False
-	if user and validate_login(user['password'],request.form['password']):
-		 session['logged_in']=True
-		 session['user']=request.form['username']
-		 session['pass']=request.form['password']
-	else:
-		flash('wrong password')
-		return redirect(url_for('home'))
-	return home()
-	
+    if flask.request.method == 'POST':
+        user = mongo.db.data.find_one_or_404({"_id":request.form['username']})
+        print(user)
+        session['logged_in']=False
+        if user and validate_login(user['password'],request.form['password']):
+            session['logged_in']=True
+            session['user']=request.form['username']
+            session['pass']=request.form['password']
+        else:
+            flash('wrong password')
+            return redirect(url_for('home'))
+        return redirect(url_for('home'))
+    else:
+        return redirect(url_for('home'))
 
 @app.route("/logout")
 def logout():
     session['logged_in'] = False
     session['user'] = "guest"
-    return home()
+    return redirect(url_for('home'))
 
 @app.route('/user',methods=['GET','POST'])
 def add():
@@ -187,6 +200,20 @@ def photo():
     print(photos)
     print(data)
     return render_template('about.html', data=data)
+
+@app.route('/suggest',methods=['GET'])
+def suggest():
+    current_user=session['user']
+    ff=find_friends()
+    sug=suggestions.get_friend_suggestions(current_user,ff)
+    print(type(sug))
+    resp = jsonify(sug)
+    resp.headers['Access-Control-Allow-Origin']='*'
+    return resp
+
+
+
+
 
 
 if __name__ == '__main__':
