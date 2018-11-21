@@ -1,11 +1,13 @@
 from flask import url_for, send_from_directory,Flask, flash, redirect, render_template, request, session, abort
 from pymongo import MongoClient
+from flask_cors import CORS
 from werkzeug import secure_filename
 from werkzeug.security import check_password_hash,generate_password_hash
 from flask_pymongo import PyMongo
 import os
 
 app = Flask(__name__)
+CORS(app)
 app.config['MONGO_URI']="mongodb://localhost:27017/photothief"
 
 mongo = PyMongo(app)
@@ -39,12 +41,12 @@ def index():
             if b==session['user']:
                 photos.append(name)
     for file in photos:
-        mongo.db.new.find_one_and_update({'_id':session['user'] },{'$addToSet':{'photo':file}})
-    img = mongo.db.new.find_one_or_404({"_id":session['user']})
+        mongo.db.data.find_one_and_update({'_id':session['user'] },{'$addToSet':{'photo':file}})
+    img = mongo.db.data.find_one_or_404({"_id":session['user']})
     userTo = list(set(img['to']))
     userFrom = list(set(img['from']))
     userfriend = list(set(img['friend']))
-    a=mongo.db.new.find({},{"_id":1})
+    a=mongo.db.data.find({},{"_id":1})
     for name in a:
         if name['_id'] not in userTo and name['_id'] != session['user'] and name['_id'] not in userFrom and name['_id'] not in userfriend:
             users.append(name['_id'])
@@ -63,25 +65,26 @@ def about():
 
 @app.route('/friends')
 def friend():
-    img = mongo.db.new.find_one_or_404({"_id":session['user']})
+    img = mongo.db.data.find_one_or_404({"_id":session['user']})
     userFrom = list(set(img['from']))
     print(userFrom)
     return render_template('friends.html',users=userFrom)
 
 @app.route('/acceptfriend',methods = ['POST'])
-def accept1():
+def accept():
     clicked = request.form['requested']
-    mongo.db.new.find_one_and_update({'_id':session['user'] },{'$pull':{'from':clicked}})
-    mongo.db.new.find_one_and_update({'_id':clicked },{'$pull':{'to':session['user']}})
-    mongo.db.new.find_one_and_update({'_id':session['user'] },{'$push':{'friend':clicked}})
-    mongo.db.new.find_one_and_update({'_id':clicked },{'$push':{'friend':session['user']}})
+    mongo.db.data.find_one_and_update({'_id':session['user'] },{'$pull':{'from':clicked}})
+    mongo.db.data.find_one_and_update({'_id':clicked },{'$pull':{'to':session['user']}})
+    mongo.db.data.find_one_and_update({'_id':session['user'] },{'$push':{'friend':clicked}})
+    mongo.db.data.find_one_and_update({'_id':clicked },{'$push':{'friend':session['user']}})
     return friend()
 
 @app.route('/rejectfriend',methods = ['POST'])
-def accept():
+def reject():
     clicked = request.form['requested']
-    mongo.db.new.find_one_and_update({'_id':session['user'] },{'$pull':{'from':clicked}})
-    mongo.db.new.find_one_and_update({'_id':clicked },{'$pull':{'to':session['user']}})
+    print(clicked)
+    mongo.db.data.find_one_and_update({'_id':session['user'] },{'$pull':{'from':clicked}})
+    mongo.db.data.find_one_and_update({'_id':clicked },{'$pull':{'to':session['user']}})
     return friend()
 
 @app.route('/upload', methods=['POST'])
@@ -117,7 +120,7 @@ def main():
 
     # Insert the user in the DB
     try:
-        mongo.db.new.insert({"_id": user, "password": pass_hash,"photo":arr,"friend":frnd,"from":frm,"to":to})
+        mongo.db.data.insert({"_id": user, "password": pass_hash,"photo":arr,"friend":frnd,"from":frm,"to":to})
         print ("User created.")
         session['logged_in']=True
         session['user']=user
@@ -134,7 +137,7 @@ def main():
 
 @app.route('/login', methods=['POST'])
 def do_admin_login():
-	user = mongo.db.new.find_one_or_404({"_id":request.form['username']})
+	user = mongo.db.data.find_one_or_404({"_id":request.form['username']})
 	session['logged_in']=False
 	if user and validate_login(user['password'],request.form['password']):
 		 session['logged_in']=True
@@ -157,39 +160,35 @@ def add():
     t=[]
     a=request.form['name']
     users = []
-    img = mongo.db.new.find_one_or_404({"_id":session['user']})
+    img = mongo.db.data.find_one_or_404({"_id":session['user']})
     t.append(a)
     print(request.form)
-    mongo.db.new.find_one_and_update({'_id':session['user'] },{'$push':{'to':a}})
-    mongo.db.new.find_one_and_update({'_id':a },{'$addToSet':{'from':session['user']}})
+    mongo.db.data.find_one_and_update({'_id':session['user'] },{'$push':{'to':a}})
+    mongo.db.data.find_one_and_update({'_id':a },{'$addToSet':{'from':session['user']}})
     return index()
 
-# @app.route('/frndphoto')
-# def photo():
-#     users = []
-#     path = './uploads/'
-#     photos = []
-#     img = mongo.db.new.find_one_or_404({"_id":session['user']})
-#     userfriend=img['friend']
-#     for name in os.listdir(path):
-#         if os.path.isfile(os.path.join(path, name)):
-#             b=name[:len(session['user'])]
-#             if b==session['user']:
-#                 photos.append(name)
-#     for file in photos:
-#         mongo.db.new.find_one_and_update({'_id':session['user'] },{'$addToSet':{'photo':file}})
-#     img = mongo.db.new.find_one_or_404({"_id":session['user']})
-#     userTo = list(set(img['to']))
-#     userFrom = list(set(img['from']))
-#     userfriend = list(set(img['friend']))
-#     a=mongo.db.new.find({},{"_id":1})
-#     for name in a:
-#         if name['_id'] not in userTo and name['_id'] != session['user'] and name['_id'] not in userFrom and name['_id'] not in userfriend:
-#             users.append(name['_id'])
-#     print(users)
-#     return render_template('home.html', photos = img['photo'],users=list(set(users)))
+@app.route('/frndphoto')
+def photo():
+    users = []
+    path = './uploads/'
+    photos = []
+    data={}
+    img = mongo.db.data.find_one_or_404({"_id":session['user']})
+    userfriend=img['friend']
+    for frnd in userfriend:
+        data[frnd]=[]
+    for name in os.listdir(path):
+        if os.path.isfile(os.path.join(path, name)):
+            for frnd in userfriend:
+                b=name[:len(frnd)]
+                if b==frnd:
+                    data[frnd].append(name)
+                    photos.append(name)
+    print(photos)
+    print(data)
+    return render_template('about.html', data=data)
 
 
 if __name__ == '__main__':
 	app.secret_key = os.urandom(12)
-	app.run(debug=True,host=0.0.0.0,port=5678)       # host='0.0.0.0'
+	app.run(debug=True,host='0.0.0.0',port=5000)       # host='0.0.0.0'

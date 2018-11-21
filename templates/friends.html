@@ -4,25 +4,27 @@
 <nav class="navbar navbar-inverse navbar-fixed-top">
   <div class="container">
     <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false"
+        aria-controls="navbar">
         <span class="sr-only">Toggle navigation</span>
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="/">Flask</a>
+      <a class="navbar-brand" href="/">Photothief</a>
     </div>
     <div id="navbar" class="collapse navbar-collapse">
       <ul class="nav navbar-nav">
         <li><a href="/">Home</a></li>
         <li class="active"><a href="/friends">Friend Request</a></li>
-        <li><a href="/about">About</a></li>
-        <li ><a href="/contact">Contact</a></li>
-        <li  ><a href="/logout">Logout</a></li>
+        <li><a href="/frndphoto">Friend's photo</a></li>
+        <li><a href="/contact">Contact</a></li>
+        <li><a href="/logout">Logout</a></li>
       </ul>
-    </ul>
-  </div><!--/.nav-collapse -->
-</div>
+      </ul>
+    </div>
+    <!--/.nav-collapse -->
+  </div>
 </nav>
 
 <div class="col-md-12">
@@ -30,27 +32,31 @@
     <h1>Incoming Friend Request</h1>
   </div>
   {% for user in users %}
-  <div  class="col-md-2">
+  <div>
     <h3>{{user}}</h1>
-    </div> 
-    <div  class="col-md-2">
-      <form action="/acceptfriend" method="POST">
-        <input type = "hidden"  value = "{{user}}" name = "requested" id>
-        <input type="submit" name="subaccept" value="ACCEPT">
-      </form>
-    </div>
-    <div class="col-md-2">
-      <form action="/rejectfriend" method="POST">
-        <input type="submit" name="subreject" value="REJECT">
-      </form>
-    </div>
-    <hr>
-    <br>
-    {% endfor %}
+  </div>
+  <div >
+
+
+    <form action="/acceptfriend" method="POST">
+      <input type="hidden" value="{{user}}" name="requested">
+      <input type="submit" name="subaccept" value="ACCEPT">
+    </form>
+  </div>
+  <div >
+    <form action="/rejectfriend" method="POST">
+      <input type="hidden" value="{{user}}" name="requested" id="inp">
+      <input type="submit" name="subreject" value="REJECT">
+    </form>
+
 
   </div>
-  <script type="text/javascript">
-    var ele =document.getElementById("inp");
-    ele.display=none;
-  </script>
-  {% endblock %}
+  <hr>
+  <br>
+  {% endfor %}
+
+</div>
+<script type="text/javascript">
+  var ele = document.getElementById("inp").style.display="none";
+</script>
+{% endblock %}
