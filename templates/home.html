@@ -47,7 +47,7 @@
 
     <form action="/user" method="POST">
         <div class="form-group">
-            <input type="text" name="name" placeholder="enter name">
+            <input type="text" name="name" placeholder="Enter name">
         </div>
         <div class="form-group">
             <input type="submit" id="sub" value="add them">
@@ -68,11 +68,22 @@
         </div>
     </form>
 </div>
-<div class="col-md-12">
+<div class="col-md-12" style="display:none;" id="suggestions">
     <div class="page-header">
-        <h1>Friend Suggestions</h1>
+        <h1>People You May Know</h1>
     </div>
-    <div class="col-md-2">
+    <table >
+        <tr>
+            <th style="padding:5px;margin:2px;">Friends </th>
+            <th style="padding:5px;margin:2px;">Mutual Friends </th>
+        </tr>
+    </table>
+    <ul class="list-unstyled">
+        <div class="col-md-12" id="friends">
+
+        </div>
+    </ul>
+    <!-- <div class="col-md-2" id="clone">
         <div class="card" style="width: 18rem;">
             <img class="card-img-top" src="static/images/download.png" alt="Card image cap">
             <div class="card-body">
@@ -81,8 +92,8 @@
                 <a class="btn btn-primary">mutual friends</a>
             </div>
         </div>
-    </div>
-    
+    </div> -->
+
 </div>
 <div class="col-md-12">
     <div class="page-header">
@@ -101,12 +112,54 @@
             url: "/suggest",
             dataType: "json"
 
-            }).done(function(data) { 
-              console.log(data);
-            //   location.href="/";
-                
+        }).done(function (data) {
+            //   console.log(data);
+            if (data) {
+                document.getElementById("suggestions").style.display = "block";
+
+                for (var key in data) {
+                    var l=document.createElement('li');
+                    l.innerHTML+=key
+                    var temp_dict = data[key]
+                    l.innerHTML+="    "
+                    
+                    for(var j in temp_dict)
+                    {
+                        
+                        for(var i=0;i<temp_dict[j].length;i++)
+                        l.innerHTML+=temp_dict[j][i]
+                        l.innerHTML+=" "
+                    }
+                    var main=document.getElementById("friends");
+                    main.append(l);
+                    
+
+
+                }
+                //   location.href="/";
+            }
         });
     }
+
+
+
+
+    //   // appending the feature name in the corresponding element
+    //   for(var i=0;i<document.getElementsByClassName("description").length;i++)
+    //   {
+    //     // adding id as the feature-name(*not a proper convention)
+    //     $(document.getElementsByClassName("description")[i]).attr("id","feature"+(i+1).toString());
+
+    //     // appending the feature name got from the database
+    //     document.getElementsByClassName("description")[i].append(data['feature'][i])
+    //   }
+
+    //   for(var i=0;i<document.getElementsByClassName("tour_button").length;i++)
+    //   {
+    //     // adding the id to the button 
+    //     $(document.getElementsByClassName("tour_button")[i]).attr("id",data['feature'][i]);
+    //   }
+    // }
 </script>
 <script src="{{ url_for('static', filename='assets/js/jquery.min.js')}}"></script>
 <script src="{{ url_for('static', filename='assets/bootstrap/js/bootstrap.min.js')}}"></script>
